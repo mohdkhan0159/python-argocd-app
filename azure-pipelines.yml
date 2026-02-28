@@ -41,7 +41,8 @@ steps:
   inputs:
     command: build
     repository: $(acrLoginServer)/$(imageName)
-    dockerfile: Dockerfile
+    dockerfile: $(Build.SourcesDirectory)/$(Build.Repository.Name)/Dockerfile
+    buildContext: $(Build.SourcesDirectory)/$(Build.Repository.Name)
     tags: |
       $(tag)
 
