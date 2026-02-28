@@ -52,8 +52,8 @@ steps:
   inputs:
     command: build
     repository: $(acrLoginServer)/$(imageName)
-    dockerfile: $(Build.SourcesDirectory)/app/Dockerfile
-    buildContext: $(Build.SourcesDirectory)/app
+    dockerfile: $(Build.SourcesDirectory)/**/Dockerfile
+    buildContext: $(Build.SourcesDirectory)/**
     tags: |
       $(tag)
 
@@ -93,7 +93,7 @@ steps:
 
 # Update GitOps Manifest
 - script: |
-    cd $(Build.SourcesDirectory)/gitops/dev
+    cd $(Build.SourcesDirectory)/**/dev
 
     echo "Updating image tag to $(tag)"
 
