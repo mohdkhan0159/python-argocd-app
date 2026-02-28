@@ -6,7 +6,7 @@ app = Flask(__name__)
 @app.route("/")
 def home():
     return jsonify({
-        "message": "ArgoCD GitOps Demo - Version 2. Argocd is being tested.",
+        "message": "ArgoCD GitOps Demo - Version 2. Argocd is being tested with another release.",
         "environment": os.getenv("ENVIRONMENT", "dev")
     })
 
