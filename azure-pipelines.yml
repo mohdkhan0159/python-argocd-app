@@ -20,10 +20,12 @@ steps:
 
 # Checkout Application Repo
 - checkout: self
+  path: python-argocd-app
 
 # Checkout GitOps Repo
 - checkout: gitops
   persistCredentials: true
+  path: gitops
 
 # Azure Login using Workload Identity Federation
 # - task: AzureCLI@2
@@ -41,8 +43,8 @@ steps:
   inputs:
     command: build
     repository: $(acrLoginServer)/$(imageName)
-    dockerfile: $(Build.SourcesDirectory)/$(Build.Repository.Name)/Dockerfile
-    buildContext: $(Build.SourcesDirectory)/$(Build.Repository.Name)
+    dockerfile: $(Build.SourcesDirectory)/python-argocd-app/Dockerfile
+    buildContext: $(Build.SourcesDirectory)/python-argocd-app
     tags: |
       $(tag)
 
