@@ -26,14 +26,14 @@ steps:
   persistCredentials: true
 
 # Azure Login using Workload Identity Federation
-# - task: AzureCLI@2
-#   displayName: Azure Login
-#   inputs:
-#     azureSubscription: azure-azuredevops-28-02-2026
-#     scriptType: bash
-#     scriptLocation: inlineScript
-#     inlineScript: |
-#       az account show
+- task: AzureCLI@2
+  displayName: Azure Login
+  inputs:
+    azureSubscription: azure-azuredevops-28-02-2026
+    scriptType: bash
+    scriptLocation: inlineScript
+    inlineScript: |
+      az account show
 
 # Build Docker Image
 - task: Docker@2
