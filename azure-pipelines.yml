@@ -91,10 +91,13 @@ steps:
 # Update GitOps Manifest
 - script: |
     cd $(System.DefaultWorkingDirectory)/argocd-gitops
-    git checkout main
-    cd dev
+    # Detect default branch automatically
+    DEFAULT_BRANCH=$(git remote show origin | grep 'HEAD branch' | cut -d' ' -f5)
+    echo "Default branch is $DEFAULT_BRANCH"
 
-    echo "Updating image tag to $(tag)"
+    git checkout $DEFAULT_BRANCH
+
+    cd dev
 
     sed -i "s|image:.*|image: $(acrLoginServer)/$(imageName):$(tag)|" deployment.yaml
 
@@ -102,6 +105,7 @@ steps:
     git config user.name "Azure DevOps"
 
     git add deployment.yaml
-    git commit -m "Update image to $(tag)"
-    git push origin main
+    git commit -m "Update image to $(tag)" || echo "No changes to commit"
+
+    git push origin $DEFAULT_BRANCH
   displayName: Update GitOps Repo
