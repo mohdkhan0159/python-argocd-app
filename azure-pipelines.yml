@@ -1,1 +1,48 @@
+trigger:
+- main
 
+variables:
+  imageName: python-argocd-app
+  acrName: argocddemoacr123.azurecr.io
+  tag: $(Build.BuildId)
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+
+- task: Docker@2
+  displayName: Build Image
+  inputs:
+    command: build
+    repository: $(acrName)/$(imageName)
+    dockerfile: Dockerfile
+    tags: |
+      $(tag)
+
+- script: |
+    sudo apt-get update
+    sudo apt-get install -y wget
+    wget https://github.com/aquasecurity/trivy/releases/latest/download/trivy_0.50.0_Linux-64bit.deb
+    sudo dpkg -i trivy_0.50.0_Linux-64bit.deb
+    trivy image --exit-code 1 --severity HIGH,CRITICAL $(acrName)/$(imageName):$(tag)
+  displayName: Trivy Scan
+
+- task: Docker@2
+  displayName: Push Image
+  inputs:
+    command: push
+    repository: $(acrName)/$(imageName)
+    tags: |
+      $(tag)
+    containerRegistry: azure-azuredevops-28-02-2026
+
+- script: |
+    git clone https://$(GIT_TOKEN)@github.com/mohdkhan0159/argocd-gitops.git
+    cd argocd-gitops/dev
+    sed -i "s|image:.*|image: $(acrName)/$(imageName):$(tag)|" deployment.yaml
+    git config user.email "devops@demo.com"
+    git config user.name "Azure DevOps"
+    git commit -am "Update image to $(tag)"
+    git push
+  displayName: Update GitOps Repo
