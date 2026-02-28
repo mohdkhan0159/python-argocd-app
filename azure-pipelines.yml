@@ -90,7 +90,9 @@ steps:
 
 # Update GitOps Manifest
 - script: |
-    cd $(System.DefaultWorkingDirectory)/argocd-gitops/dev
+    cd $(System.DefaultWorkingDirectory)/argocd-gitops
+    git checkout main
+    cd dev
 
     echo "Updating image tag to $(tag)"
 
@@ -101,5 +103,5 @@ steps:
 
     git add deployment.yaml
     git commit -m "Update image to $(tag)"
-    git push
+    git push origin main
   displayName: Update GitOps Repo
