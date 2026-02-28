@@ -14,9 +14,7 @@ variables:
   tag: $(Build.BuildId)
 
 pool:
-  name: self-hosted
-  demands:
-  - Agent.Name -equals argocd
+  vmImage: ubuntu-latest
 
 steps:
 
