@@ -20,12 +20,10 @@ steps:
 
 # Checkout Application Repo
 - checkout: self
-  path: app
 
 # Checkout GitOps Repo
 - checkout: gitops
   persistCredentials: true
-  path: gitops
 
 # Azure Login using Workload Identity Federation
 # - task: AzureCLI@2
@@ -52,7 +50,7 @@ steps:
   inputs:
     command: build
     repository: $(acrLoginServer)/$(imageName)
-    dockerfile: .**/Dockerfile
+    dockerfile: $(System.DefaultWorkingDirectory)/python-argocd-app/Dockerfile
     tags: |
       $(tag)
 
@@ -92,7 +90,7 @@ steps:
 
 # Update GitOps Manifest
 - script: |
-    cd $(Build.SourcesDirectory)/**/dev
+    cd $(System.DefaultWorkingDirectory)/argocd-gitops/dev
 
     echo "Updating image tag to $(tag)"
 
