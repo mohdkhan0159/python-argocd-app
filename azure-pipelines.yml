@@ -20,6 +20,7 @@ steps:
 
 # Checkout Application Repo
 - checkout: self
+  path: app
 
 # Checkout GitOps Repo
 - checkout: gitops
@@ -36,72 +37,72 @@ steps:
 #     inlineScript: |
 #       az account show
 
-- script: |
-    echo "==== PRINTING DIRECTORY STRUCTURE ===="
-    echo "Build.SourcesDirectory = $(Build.SourcesDirectory)"
-    pwd
-    ls -la
-    echo "---- recursive ----"
-    ls -R
-  displayName: DEBUG - List Full Directory
+# - script: |
+#     echo "==== PRINTING DIRECTORY STRUCTURE ===="
+#     echo "Build.SourcesDirectory = $(Build.SourcesDirectory)"
+#     pwd
+#     ls -la
+#     echo "---- recursive ----"
+#     ls -R
+#   displayName: DEBUG - List Full Directory
 
-# # Build Docker Image
+# Build Docker Image
+- task: Docker@2
+  displayName: Build Image
+  inputs:
+    command: build
+    repository: $(acrLoginServer)/$(imageName)
+    dockerfile: $(Build.SourcesDirectory)/app/Dockerfile
+    buildContext: $(Build.SourcesDirectory)/app
+    tags: |
+      $(tag)
+
+# Trivy Security Scan
+- script: |
+    sudo apt-get update
+    sudo apt-get install -y wget
+    wget https://github.com/aquasecurity/trivy/releases/latest/download/trivy_0.50.0_Linux-64bit.deb
+    sudo dpkg -i trivy_0.50.0_Linux-64bit.deb
+    trivy image --exit-code 1 --severity HIGH,CRITICAL $(acrLoginServer)/$(imageName):$(tag)
+  displayName: Trivy Scan
+
+# Push Image to Private ACR
 # - task: Docker@2
-#   displayName: Build Image
+#   displayName: Push Image
 #   inputs:
-#     command: build
+#     command: push
 #     repository: $(acrLoginServer)/$(imageName)
-#     dockerfile: $(Build.SourcesDirectory)/Dockerfile
-#     buildContext: $(Build.SourcesDirectory)
 #     tags: |
 #       $(tag)
+#     containerRegistry: azure-azuredevops-28-02-2026
 
-# # Trivy Security Scan
-# - script: |
-#     sudo apt-get update
-#     sudo apt-get install -y wget
-#     wget https://github.com/aquasecurity/trivy/releases/latest/download/trivy_0.50.0_Linux-64bit.deb
-#     sudo dpkg -i trivy_0.50.0_Linux-64bit.deb
-#     trivy image --exit-code 1 --severity HIGH,CRITICAL $(acrLoginServer)/$(imageName):$(tag)
-#   displayName: Trivy Scan
+- task: AzureCLI@2
+  inputs:
+    azureSubscription: 'azure-azuredevops-28-02-2026'
+    scriptType: bash
+    scriptLocation: inlineScript
+    inlineScript: |
+      # Login to ACR using Azure CLI (uses service principal behind azurerm connection)
+      az acr login --name argocddemoacr123.azurecr.io
 
-# # Push Image to Private ACR
-# # - task: Docker@2
-# #   displayName: Push Image
-# #   inputs:
-# #     command: push
-# #     repository: $(acrLoginServer)/$(imageName)
-# #     tags: |
-# #       $(tag)
-# #     containerRegistry: azure-azuredevops-28-02-2026
+      # Build image
+      docker build -t argocddemoacr123.azurecr.io/$(imageName):$(Build.BuildId) .
 
-# - task: AzureCLI@2
-#   inputs:
-#     azureSubscription: 'azure-azuredevops-28-02-2026'
-#     scriptType: bash
-#     scriptLocation: inlineScript
-#     inlineScript: |
-#       # Login to ACR using Azure CLI (uses service principal behind azurerm connection)
-#       az acr login --name argocddemoacr123.azurecr.io
+      # Push image
+      docker push argocddemoacr123.azurecr.io/$(imageName):$(Build.BuildId)
 
-#       # Build image
-#       docker build -t argocddemoacr123.azurecr.io/$(imageName):$(Build.BuildId) .
+# Update GitOps Manifest
+- script: |
+    cd $(Build.SourcesDirectory)/gitops/dev
 
-#       # Push image
-#       docker push argocddemoacr123.azurecr.io/$(imageName):$(Build.BuildId)
+    echo "Updating image tag to $(tag)"
 
-# # Update GitOps Manifest
-# - script: |
-#     cd $(Build.SourcesDirectory)/argocd-gitops/dev
+    sed -i "s|image:.*|image: $(acrLoginServer)/$(imageName):$(tag)|" deployment.yaml
 
-#     echo "Updating image tag to $(tag)"
+    git config user.email "devops@demo.com"
+    git config user.name "Azure DevOps"
 
-#     sed -i "s|image:.*|image: $(acrLoginServer)/$(imageName):$(tag)|" deployment.yaml
-
-#     git config user.email "devops@demo.com"
-#     git config user.name "Azure DevOps"
-
-#     git add deployment.yaml
-#     git commit -m "Update image to $(tag)"
-#     git push
-#   displayName: Update GitOps Repo
+    git add deployment.yaml
+    git commit -m "Update image to $(tag)"
+    git push
+  displayName: Update GitOps Repo
