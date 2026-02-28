@@ -52,8 +52,7 @@ steps:
   inputs:
     command: build
     repository: $(acrLoginServer)/$(imageName)
-    dockerfile: $(Build.SourcesDirectory)/**/Dockerfile
-    buildContext: $(Build.SourcesDirectory)/**
+    dockerfile: .**/Dockerfile
     tags: |
       $(tag)
 
