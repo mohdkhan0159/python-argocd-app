@@ -26,14 +26,14 @@ steps:
   persistCredentials: true
 
 # Azure Login using Workload Identity Federation
-- task: AzureCLI@2
-  displayName: Azure Login
-  inputs:
-    azureSubscription: azure-azuredevops-28-02-2026
-    scriptType: bash
-    scriptLocation: inlineScript
-    inlineScript: |
-      az account show
+# - task: AzureCLI@2
+#   displayName: Azure Login
+#   inputs:
+#     azureSubscription: azure-azuredevops-28-02-2026
+#     scriptType: bash
+#     scriptLocation: inlineScript
+#     inlineScript: |
+#       az account show
 
 # Build Docker Image
 - task: Docker@2
@@ -55,14 +55,29 @@ steps:
   displayName: Trivy Scan
 
 # Push Image to Private ACR
-- task: Docker@2
-  displayName: Push Image
+# - task: Docker@2
+#   displayName: Push Image
+#   inputs:
+#     command: push
+#     repository: $(acrLoginServer)/$(imageName)
+#     tags: |
+#       $(tag)
+#     containerRegistry: azure-azuredevops-28-02-2026
+
+- task: AzureCLI@2
   inputs:
-    command: push
-    repository: $(acrLoginServer)/$(imageName)
-    tags: |
-      $(tag)
-    containerRegistry: azure-azuredevops-28-02-2026
+    azureSubscription: 'azure-azuredevops-28-02-2026'
+    scriptType: bash
+    scriptLocation: inlineScript
+    inlineScript: |
+      # Login to ACR using Azure CLI (uses service principal behind azurerm connection)
+      az acr login --name argocddemoacr123.azurecr.io
+
+      # Build image
+      docker build -t argocddemoacr123.azurecr.io/$(imageName):$(Build.BuildId) .
+
+      # Push image
+      docker push argocddemoacr123.azurecr.io/$(imageName):$(Build.BuildId)
 
 # Update GitOps Manifest
 - script: |
