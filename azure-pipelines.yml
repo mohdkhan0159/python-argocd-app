@@ -37,63 +37,69 @@ steps:
 #     inlineScript: |
 #       az account show
 
-# Build Docker Image
-- task: Docker@2
-  displayName: Build Image
-  inputs:
-    command: build
-    repository: $(acrLoginServer)/$(imageName)
-    dockerfile: $(Build.SourcesDirectory)/python-argocd-app/Dockerfile
-    buildContext: $(Build.SourcesDirectory)/python-argocd-app
-    tags: |
-      $(tag)
-
-# Trivy Security Scan
 - script: |
-    sudo apt-get update
-    sudo apt-get install -y wget
-    wget https://github.com/aquasecurity/trivy/releases/latest/download/trivy_0.50.0_Linux-64bit.deb
-    sudo dpkg -i trivy_0.50.0_Linux-64bit.deb
-    trivy image --exit-code 1 --severity HIGH,CRITICAL $(acrLoginServer)/$(imageName):$(tag)
-  displayName: Trivy Scan
+    echo "==== PRINTING DIRECTORY STRUCTURE ===="
+    echo "Build.SourcesDirectory = $(Build.SourcesDirectory)"
+    ls -R $(Build.SourcesDirectory)
+  displayName: DEBUG - List Full Directory
 
-# Push Image to Private ACR
+# # Build Docker Image
 # - task: Docker@2
-#   displayName: Push Image
+#   displayName: Build Image
 #   inputs:
-#     command: push
+#     command: build
 #     repository: $(acrLoginServer)/$(imageName)
+#     dockerfile: $(Build.SourcesDirectory)/python-argocd-app/Dockerfile
+#     buildContext: $(Build.SourcesDirectory)/python-argocd-app
 #     tags: |
 #       $(tag)
-#     containerRegistry: azure-azuredevops-28-02-2026
 
-- task: AzureCLI@2
-  inputs:
-    azureSubscription: 'azure-azuredevops-28-02-2026'
-    scriptType: bash
-    scriptLocation: inlineScript
-    inlineScript: |
-      # Login to ACR using Azure CLI (uses service principal behind azurerm connection)
-      az acr login --name argocddemoacr123.azurecr.io
+# # Trivy Security Scan
+# - script: |
+#     sudo apt-get update
+#     sudo apt-get install -y wget
+#     wget https://github.com/aquasecurity/trivy/releases/latest/download/trivy_0.50.0_Linux-64bit.deb
+#     sudo dpkg -i trivy_0.50.0_Linux-64bit.deb
+#     trivy image --exit-code 1 --severity HIGH,CRITICAL $(acrLoginServer)/$(imageName):$(tag)
+#   displayName: Trivy Scan
 
-      # Build image
-      docker build -t argocddemoacr123.azurecr.io/$(imageName):$(Build.BuildId) .
+# # Push Image to Private ACR
+# # - task: Docker@2
+# #   displayName: Push Image
+# #   inputs:
+# #     command: push
+# #     repository: $(acrLoginServer)/$(imageName)
+# #     tags: |
+# #       $(tag)
+# #     containerRegistry: azure-azuredevops-28-02-2026
 
-      # Push image
-      docker push argocddemoacr123.azurecr.io/$(imageName):$(Build.BuildId)
+# - task: AzureCLI@2
+#   inputs:
+#     azureSubscription: 'azure-azuredevops-28-02-2026'
+#     scriptType: bash
+#     scriptLocation: inlineScript
+#     inlineScript: |
+#       # Login to ACR using Azure CLI (uses service principal behind azurerm connection)
+#       az acr login --name argocddemoacr123.azurecr.io
 
-# Update GitOps Manifest
-- script: |
-    cd $(Build.SourcesDirectory)/argocd-gitops/dev
+#       # Build image
+#       docker build -t argocddemoacr123.azurecr.io/$(imageName):$(Build.BuildId) .
 
-    echo "Updating image tag to $(tag)"
+#       # Push image
+#       docker push argocddemoacr123.azurecr.io/$(imageName):$(Build.BuildId)
 
-    sed -i "s|image:.*|image: $(acrLoginServer)/$(imageName):$(tag)|" deployment.yaml
+# # Update GitOps Manifest
+# - script: |
+#     cd $(Build.SourcesDirectory)/argocd-gitops/dev
 
-    git config user.email "devops@demo.com"
-    git config user.name "Azure DevOps"
+#     echo "Updating image tag to $(tag)"
 
-    git add deployment.yaml
-    git commit -m "Update image to $(tag)"
-    git push
-  displayName: Update GitOps Repo
+#     sed -i "s|image:.*|image: $(acrLoginServer)/$(imageName):$(tag)|" deployment.yaml
+
+#     git config user.email "devops@demo.com"
+#     git config user.name "Azure DevOps"
+
+#     git add deployment.yaml
+#     git commit -m "Update image to $(tag)"
+#     git push
+#   displayName: Update GitOps Repo
