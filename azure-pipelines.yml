@@ -22,7 +22,7 @@ steps:
 - checkout: self
 
 # Checkout GitOps Repo
-- checkout: gitops
+- checkout: argocd-gitops
   persistCredentials: true
 
 # Azure Login using Workload Identity Federation
